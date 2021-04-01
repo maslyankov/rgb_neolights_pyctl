@@ -35,7 +35,7 @@ def main():
     #     lights_ctl.set_brightness(20 * x)
     #     sleep(1)
     #
-    lights_ctl.set_brightness(0)
+    # lights_ctl.set_brightness(0)
 
     # some_color = '009000'
     #
@@ -45,7 +45,7 @@ def main():
     #     sleep(1.5)
 
     # Cycle colors
-    lights_ctl.set_brightness(0)
+    # lights_ctl.set_brightness(0)
 
     # lights_ctl.set_brightness(60)
 
