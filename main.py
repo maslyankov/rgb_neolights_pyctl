@@ -1,6 +1,6 @@
 from neolights_ctl import NeoLightsCtl
 from time import sleep
-from vendor.luxmeters.ut382.ut382 import list_ports
+from luxmeters.serial_utils import list_ports
 
 
 def int_to_str(num):
@@ -26,9 +26,9 @@ def cycle_colors(lightctl):
 
 
 def main():
-    list_ports()
+    print(list_ports())
 
-    lights_ctl = NeoLightsCtl()
+    # lights_ctl = NeoLightsCtl()
     print("Starting sequence")
 
     # for x in range(0, 5):
