@@ -1,7 +1,8 @@
-from serial import Serial
+from serial import Serial, SerialException
 from time import sleep
 from json import loads
 
+from luxmeters.serial_utils import list_ports, find_all_luxmeters
 
 # from vendor.luxmeters.konica.CL200A import CL200A
 
@@ -21,16 +22,26 @@ def _read_response(resp, obj):
 
 
 def read_response(obj):
-    obj.connection.flush()
+    obj.conn.flush()
     sleep(.1)
     return _read_response(obj.read(), obj)
 
 
 class NeoLightsCtl:
     def __init__(self):
-        device = 'COM8'
+        try_to_find_serial = find_all_luxmeters('CH340', 'description')
+        if try_to_find_serial:
+            device = try_to_find_serial[0]
+            print(f"Found device at: {device}")
+        else:
+            raise ValueError("Could not find the serial port of lights...")
+            exit(1)
+
         baud = 115200
-        self.connection = Serial(device, baud)
+        try:
+            self.conn = Serial(device, baud)
+        except SerialException:
+            raise ValueError("Could not connect to serial device")
 
         print("Waiting 1 sec while initializing...")
         sleep(1)
@@ -46,11 +57,14 @@ class NeoLightsCtl:
         self.color = self.get_color()
         print(f"Init color = {self.color}")
 
+        # Turn Off Wifi
+        self.send_cmd("Wifi 0")
+
     def read(self):
-        return self.connection.read(self.connection.in_waiting).decode('ascii')
+        return self.conn.read(self.conn.in_waiting).decode('ascii')
 
     def send_cmd(self, cmd):
-        self.connection.write(f"{cmd}\n".encode())
+        self.conn.write(f"{cmd}\n".encode())
 
     def get_pixels_count(self):
         self.send_cmd("Pixels")
@@ -78,4 +92,4 @@ class NeoLightsCtl:
 
     def __del__(self):
         self.set_brightness(0)
-        self.connection.close()
+        self.conn.close()
