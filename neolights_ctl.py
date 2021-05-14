@@ -1,6 +1,6 @@
 from serial import Serial, SerialException
 from time import sleep
-from json import loads
+from json import loads, JSONDecodeError
 
 from luxmeters.serial_utils import list_ports, find_all_luxmeters
 
@@ -10,15 +10,28 @@ from luxmeters.serial_utils import list_ports, find_all_luxmeters
 
 def _read_response(resp, obj):
     try:
-        out = loads(resp.split(' = ')[1])
+        resp = resp.splitlines()
+        if len(resp):
+            # print("We got multiple lines of output!")
+            # print(f"'{resp}'")
+            out = loads(resp[-1].split(' = ')[1])
+        else:
+            out = None
     except IndexError:
         try:
             print("Getting resp failed, retrying...")
-            new_read = obj.read()
-            out = loads(new_read.split(' = ')[1])
+            new_read = obj.read().splitlines()
+            if len(new_read):
+                print("We got multiple lines of output!")
+                print(f"'{new_read}'")
+                out = loads(new_read[-1].split(' = ')[1])
+            else:
+                out = None
         except IndexError:
             raise Exception(f"Got: {resp}")
-
+    except JSONDecodeError:
+        print("JSONDecodeError!")
+        raise Exception(f"Got: {resp}")
     return out
 
 
@@ -51,15 +64,23 @@ class NeoLightsCtl:
         self.pixels_count = self.get_pixels_count()
 
         resp_data = self.get_colors()
-        self.power = bool(1 if resp_data['POWER'] == "ON" else 0)
-        self.color = resp_data['Color']
+        try:
+            self.power = bool(1 if resp_data['POWER'] == "ON" else 0)
+            self.color = resp_data['Color']
 
-        hsb = resp_data['HSBColor'].split(",")
-        self.hue = int(hsb[0])
-        self.saturation = int(hsb[1])
-        self.brightness = int(hsb[3])
+            hsb = resp_data['HSBColor'].split(",")
+            self.hue = int(hsb[0])
+            self.saturation = int(hsb[1])
+            self.brightness = int(hsb[2])
 
-        self.channels = resp_data['Channel']
+            self.channels = resp_data['Channel']
+        except KeyError as err:
+            print(f"Error at key {err}")
+            print(f"resp_data: {resp_data}")
+            exit(1)
+        except IndexError:
+            print(f"hsb IndexError! Data: {hsb}")
+            exit(1)
 
         # Turn Off Wifi
         self.send_cmd("Wifi 0")
@@ -87,7 +108,7 @@ class NeoLightsCtl:
         return int(read_response(self)['Pixels'])
 
     def get_colors(self) -> dict:
-        self.send_cmd("Color")
+        self.send_cmd("HSBColor")
         return read_response(self)
 
     def set_led(self, led_num: int, color):
@@ -168,8 +189,12 @@ class NeoLightsCtl:
             hsb = data['HSBColor'].split(",")
             self.hue = int(hsb[0])
             self.saturation = int(hsb[1])
-            self.brightness = int(hsb[3])
+            self.brightness = int(hsb[2])
         except KeyError:
+            print(f"HSBColor Keyerror! Data: {data}")
+            return
+        except IndexError:
+            print(f"hsb IndexError! Data: {hsb}")
             return
 
     def __del__(self):

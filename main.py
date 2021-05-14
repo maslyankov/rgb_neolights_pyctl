@@ -11,11 +11,11 @@ def int_to_str(num):
 
 
 class TestLights:
-    def __init__(self, sensor, light):
+    def __init__(self, light, sensor=None):
         print(f"Initialising Test measurement")
 
-        if not sensor:
-            raise ValueError("Sensor is required!")
+        # if not sensor:
+        #     raise ValueError("Sensor is required!")
         self.sensor = sensor
 
         if not light:
@@ -25,6 +25,10 @@ class TestLights:
         self.measurements = list()
 
     def grab_data(self, color=None, hsb=None):
+        if not self.sensor:
+            print("Error! Trying to get sensor data without configured sensor!")
+            return
+
         data = self.sensor.get('delta_uv')
         if data[1] < 0:
             return -1
@@ -43,7 +47,7 @@ class TestLights:
         print(f"Measured: {new_data}")
         self.measurements.append(new_data)
 
-    def go_through_colors_list(self, action=None, colors_list: list):
+    def go_through_colors_list(self, colors_list: list, action=None):
         test_counter = 0
         colors_num = len(colors_list)
 
@@ -139,7 +143,7 @@ class TestLights:
                 hsb = [hue, saturation, target_brightness]
 
                 # if blue % 9 == 0:
-                print(f"Setting hsb to [{hue}, {saturation}, {target_brightness}]")
+                print(f"Setting HSB to [{hue}, {saturation}, {target_brightness}]")
 
                 self.light.set_hsb(hsb)
                 print("Waiting 1.5 sec for the sensor to load...")
@@ -176,14 +180,16 @@ def main():
 
     light.set_brightness(100)
 
-    s = Sensor(model="cl200a")
+    # s = Sensor(model="cl200a")
 
-    print(s.get('all'))
+    # print(s.get('all'))
 
-    testing = TestLights(sensor=s, light=light)
+    testing = TestLights(light=light)  # , sensor=s)
 
-    colors_list = ['969696', 'D79696', 'D89696', 'D99696', 'DA9696', 'DB9696', 'DC9696', 'DD9696', 'DE9696', 'DF9696', 'E09696', 'E19696', 'E29696', 'E39696', 'E49696', 'E59696', 'E69696', 'E79696', 'E89696', 'E99696', 'EA9696']
-    testing.go_through_colors_list(testing.grab_data, colors_list)
+    # colors_list = ['969696', 'D79696', 'D89696', 'D99696', 'DA9696', 'DB9696', 'DC9696', 'DD9696', 'DE9696', 'DF9696', 'E09696', 'E19696', 'E29696', 'E39696', 'E49696', 'E59696', 'E69696', 'E79696', 'E89696', 'E99696', 'EA9696']
+    # testing.go_through_colors_list(testing.grab_data, colors_list)
+
+    testing.cycle_hsb()
 
     # testing.cycle_colors(testing.grab_data)
 
